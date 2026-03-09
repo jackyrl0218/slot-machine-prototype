@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Slot Machine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #1c1c1c 0%, #2d2d2d 50%, #1a1a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 300;
+            letter-spacing: 6px;
+            color: #e0e0e0;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            color: #666;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        .machines-container {
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .machine-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .machine-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .machine {
+            width: 280px;
+            height: 320px;
+            background: linear-gradient(180deg, #4a4a4a 0%, #333 20%, #4a4a4a 40%, #333 60%, #4a4a4a 80%, #333 100%);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.5),
+                inset 0 2px 4px rgba(255,255,255,0.1),
+                inset 0 -2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .machine::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 3px solid #555;
+            border-radius: 15px;
+            pointer-events: none;
+        }
+
+        .reels-container {
+            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 30px;
+            border: 4px solid #222;
+            box-shadow: 
+                inset 0 5px 15px rgba(0,0,0,0.8),
+                0 2px 4px rgba(255,255,255,0.05);
+        }
+
+        .reels {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            height: 100px;
+        }
+
+        .reel {
+            width: 70px;
+            height: 100px;
+            background: linear-gradient(180deg, #fff 0%, #e0e0e0 50%, #fff 100%);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .reel::before,
+        .reel::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 25px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .reel::before {
+            top: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+        }
+
+        .reel::after {
+            bottom: 0;
+            background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+        }
+
+        .reel-strip {
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.1s ease;
+            position: absolute;
+            width: 100%;
+        }
+
+        .reel-symbol {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            flex-shrink: 0;
+        }
+
+        .center-line {
+            position: absolute;
+            top: 50%;
+            left: -5px;
+            right: -5px;
+            height: 4px;
+            background: #ff3333;
+            transform: translateY(-50%);
+            z-index: 20;
+            box-shadow: 0 0 10px rgba(255,50,50,0.5);
+        }
+
+        .reels-frame {
+            position: relative;
+        }
+
+        .lever-assembly {
+            width: 50px;
+            height: 200px;
+            position: relative;
+            margin-left: -5px;
+        }
+
+        .lever-base {
+            width: 40px;
+            height: 180px;
+            background: linear-gradient(90deg, #555 0%, #777 50%, #555 100%);
+            border-radius: 0 10px 10px 0;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .lever-slot {
+            width: 20px;
+            height: 140px;
+            background: #222;
+            position: absolute;
+            top: 20px;
+            left: 10px;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        .lever-arm {
+            width: 16px;
+            height: 60px;
+            background: linear-gradient(90deg, #888 0%, #aaa 50%, #888 100%);
+            position: absolute;
+            left: 12px;
+            top: 20px;
+            border-radius: 8px;
+            cursor: grab;
+            transition: top 0.1s ease;
+            z-index: 10;
+        }
+
+        .lever-arm:active {
+            cursor: grabbing;
+        }
+
+        .lever-arm.released {
+            transition: top 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .lever-knob {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, #ff6666, #cc0000 50%, #990000 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: -25px;
+            left: -17px;
+            box-shadow: 
+                0 4px 10px rgba(0,0,0,0.4),
+                inset 0 -3px 10px rgba(0,0,0,0.3),
+                inset 0 3px 10px rgba(255,255,255,0.2);
+            cursor: grab;
+        }
+
+        .lever-knob:active {
+            cursor: grabbing;
+        }
+
+        .lever-knob::after {
+            content: '';
+            width: 15px;
+            height: 15px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            left: 10px;
+        }
+
+        .indicator-lights {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .light {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .light.win {
+            background: radial-gradient(circle at 30% 30%, #66ff66, #00cc00);
+            box-shadow: 0 0 20px rgba(0,255,0,0.6);
+        }
+
+        .light.lose {
+            background: radial-gradient(circle at 30% 30%, #ff6666, #cc0000);
+            box-shadow: 0 0 20px rgba(255,0,0,0.6);
+        }
+
+        .coin-slot {
+            width: 60px;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            margin: 15px auto 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .machine-label {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #222;
+            color: #ccc;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* Outcome display */
+        .outcome-display {
+            width: 300px;
+            min-height: 100px;
+            margin-top: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .outcome-display.show {
+            opacity: 1;
+        }
+
+        .outcome-box {
+            padding: 15px 20px;
+            border-radius: 10px;
+            max-width: 100%;
+        }
+
+        .outcome-box.positive {
+            background: linear-gradient(135deg, #1a3d1a 0%, #0d1f0d 100%);
+            border: 1px solid #2d5a2d;
+        }
+
+        .outcome-box.negative {
+            background: linear-gradient(135deg, #3d1a1a 0%, #1f0d0d 100%);
+            border: 1px solid #5a2d2d;
+        }
+
+        .outcome-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .outcome-box.positive .outcome-title {
+            color: #6de06d;
+        }
+
+        .outcome-box.negative .outcome-title {
+            color: #e06d6d;
+        }
+
+        .outcome-description {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .outcome-box.positive .outcome-description {
+            color: #a0d0a0;
+        }
+
+        .outcome-box.negative .outcome-description {
+            color: #d0a0a0;
+        }
+
+        /* Reveal message */
+        .reveal-container {
+            max-width: 600px;
+            margin-top: 50px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+
+        .reveal-container.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .reveal-message {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 25px 30px;
+        }
+
+        .reveal-message p {
+            color: #777;
+            font-size: 1rem;
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        .reveal-message p:last-child {
+            margin-bottom: 0;
+        }
+
+        .reveal-message .rigged {
+            color: #e06d6d;
+        }
+
+        .reveal-message .favored {
+            color: #6de06d;
+        }
+
+        .pull-counter {
+            color: #444;
+            font-size: 0.85rem;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .machines-container {
+                flex-direction: column;
+                gap: 40px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>The Slot Machine</h1>
+        <p class="instruction">Pull down and release the lever</p>
+    </header>
+
+    <div class="machines-container">
+        <!-- Machine A -->
+        <div class="machine-column">
+            <div class="machine-wrapper">
+                <div class="machine" id="machineA">
+                    <div class="machine-label">A</div>
+                    <div class="reels-container">
+                        <div class="reels-frame">
+                            <div class="center-line"></div>
+                            <div class="reels">
+                                <div class="reel">
+                                    <div class="reel-strip" id="reelA1">
+                                        <div class="reel-symbol">💰</div>
+                                    </div>
+                                </div>
+                                <div class="reel">
+                                    <div class="reel-strip" id="reelA2">
+                                        <div class="reel-symbol">📋</div>
+                                    </div>
+                                </div>
+                                <div class="reel">
+                                    <div class="reel-strip" id="reelA3">
+                                        <div class="reel-symbol">🏠</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="indicator-lights">
+                        <div class="light" id="lightA1"></div>
+                        <div class="light" id="lightA2"></div>
+                        <div class="light" id="lightA3"></div>
+                    </div>
+                    <div class="coin-slot"></div>
+                </div>
+                <div class="lever-assembly">
+                    <div class="lever-base">
+                        <div class="lever-slot"></div>
+                        <div class="lever-arm" id="leverA" data-machine="A">
+                            <div class="lever-knob"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="outcome-display" id="outcomeA">
+                <div class="outcome-box" id="outcomeBoxA">
+                    <div class="outcome-title" id="outcomeTitleA"></div>
+                    <div class="outcome-description" id="outcomeDescA"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Machine B -->
+        <div class="machine-column">
+            <div class="machine-wrapper">
+                <div class="machine" id="machineB">
+                    <div class="machine-label">B</div>
+                    <div class="reels-container">
+                        <div class="reels-frame">
+                            <div class="center-line"></div>
+                            <div class="reels">
+                                <div class="reel">
+                                    <div class="reel-strip" id="reelB1">
+                                        <div class="reel-symbol">💰</div>
+                                    </div>
+                                </div>
+                                <div class="reel">
+                                    <div class="reel-strip" id="reelB2">
+                                        <div class="reel-symbol">📋</div>
+                                    </div>
+                                </div>
+                                <div class="reel">
+                                    <div class="reel-strip" id="reelB3">
+                                        <div class="reel-symbol">🏠</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="indicator-lights">
+                        <div class="light" id="lightB1"></div>
+                        <div class="light" id="lightB2"></div>
+                        <div class="light" id="lightB3"></div>
+                    </div>
+                    <div class="coin-slot"></div>
+                </div>
+                <div class="lever-assembly">
+                    <div class="lever-base">
+                        <div class="lever-slot"></div>
+                        <div class="lever-arm" id="leverB" data-machine="B">
+                            <div class="lever-knob"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="outcome-display" id="outcomeB">
+                <div class="outcome-box" id="outcomeBoxB">
+                    <div class="outcome-title" id="outcomeTitleB"></div>
+                    <div class="outcome-description" id="outcomeDescB"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="reveal-container" id="revealContainer">
+        <div class="reveal-message">
+            <p><span class="rigged">Machine A</span> was rigged against you.</p>
+            <p><span class="favored">Machine B</span> was designed to let you win.</p>
+            <p>Same machines. Same pull. Different odds.</p>
+        </div>
+    </div>
+
+    <p class="pull-counter">Pulls: <span id="pullCount">0</span></p>
+
+    <script>
+        // All symbols used for spinning
+        const allSymbols = ['💰', '📈', '⭐', '🎁', '❤️', '🎓', '🏠', '💸', '🔧', '📋', '❌', '📉', '🏥', '⚡'];
+
+        // Positive outcomes with matching icons
+        const positiveOutcomes = [
+            { 
+                symbols: ['💰', '💰', '💰'], 
+                title: 'RAISE', 
+                description: 'Your salary increased. More money in your pocket each month.'
+            },
+            { 
+                symbols: ['📈', '📈', '📈'], 
+                title: 'PROMOTION', 
+                description: 'You moved up the ladder. New title, new opportunities.'
+            },
+            { 
+                symbols: ['⭐', '⭐', '⭐'], 
+                title: 'BONUS', 
+                description: 'Extra money this month. A reward for your hard work.'
+            },
+            { 
+                symbols: ['🏠', '🏠', '🏠'], 
+                title: 'LOAN APPROVED', 
+                description: 'The bank said yes. You can afford that new home.'
+            },
+            { 
+                symbols: ['❤️', '❤️', '❤️'], 
+                title: 'HEALTHCARE COVERED', 
+                description: 'Your medical bills are taken care of. One less thing to worry about.'
+            },
+            { 
+                symbols: ['🎁', '🎁', '🎁'], 
+                title: 'TAX REFUND', 
+                description: 'Money back from the government. A nice surprise.'
+            },
+            { 
+                symbols: ['🎓', '🎓', '🎓'], 
+                title: 'SCHOLARSHIP GRANTED', 
+                description: 'Your education is funded. Doors are opening.'
+            },
+        ];
+
+        // Negative outcomes with matching icons
+        const negativeOutcomes = [
+            { 
+                symbols: ['💸', '💸', '💸'], 
+                title: 'RENT DUE', 
+                description: 'The landlord is waiting. Pay up or face eviction.'
+            },
+            { 
+                symbols: ['🔧', '🔧', '🔧'], 
+                title: 'CAR BROKE DOWN', 
+                description: '$800 repair bill. How will you get to work?'
+            },
+            { 
+                symbols: ['📋', '📋', '📋'], 
+                title: 'TUITION BILL', 
+                description: 'Another semester, another debt. Due in 30 days.'
+            },
+            { 
+                symbols: ['❌', '❌', '❌'], 
+                title: 'NO BONUS', 
+                description: 'Budget cuts this year. Maybe next time.'
+            },
+            { 
+                symbols: ['📉', '📉', '📉'], 
+                title: 'LAID OFF', 
+                description: 'Position eliminated. Start job hunting tomorrow.'
+            },
+            { 
+                symbols: ['🏥', '🏥', '🏥'], 
+                title: 'MEDICAL BILL DENIED', 
+                description: 'Insurance refused to pay. The debt is yours.'
+            },
+            { 
+                symbols: ['⚡', '⚡', '⚡'], 
+                title: 'UTILITY BILL DOUBLED', 
+                description: 'Rates went up. Your paycheck stretches thinner.'
+            },
+            { 
+                symbols: ['💸', '📋', '🔧'], 
+                title: 'PAYCHECK DELAYED', 
+                description: 'Processing error. Your bills won\'t wait.'
+            },
+        ];
+        
+        let machineState = {
+            A: { spinning: false },
+            B: { spinning: false }
+        };
+
+        let totalPulls = 0;
+        const revealThreshold = 6;
+
+        const levers = document.querySelectorAll('.lever-arm');
+        
+        levers.forEach(lever => {
+            let isDragging = false;
+            let startY = 0;
+            let currentY = 0;
+            const maxPull = 80;
+            const triggerThreshold = 60;
+            const machine = lever.dataset.machine;
+
+            const onStart = (e) => {
+                if (machineState[machine].spinning) return;
+                isDragging = true;
+                startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                lever.style.transition = 'none';
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                const deltaY = clientY - startY;
+                currentY = Math.max(0, Math.min(maxPull, deltaY));
+                lever.style.top = (20 + currentY) + 'px';
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                lever.classList.add('released');
+                
+                if (currentY >= triggerThreshold) {
+                    spin(machine);
+                }
+                
+                lever.style.top = '20px';
+                currentY = 0;
+                
+                setTimeout(() => {
+                    lever.classList.remove('released');
+                }, 300);
+            };
+
+            lever.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+
+            lever.addEventListener('touchstart', onStart);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+        });
+
+        function spin(machine) {
+            if (machineState[machine].spinning) return;
+            machineState[machine].spinning = true;
+
+            // Hide previous outcome
+            document.getElementById(`outcome${machine}`).classList.remove('show');
+
+            // Reset lights
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`light${machine}${i}`).className = 'light';
+            }
+
+            const reels = [
+                document.getElementById(`reel${machine}1`),
+                document.getElementById(`reel${machine}2`),
+                document.getElementById(`reel${machine}3`)
+            ];
+
+            // Machine A: 85% lose, Machine B: 70% win
+            const isWin = machine === 'A' ? Math.random() < 0.15 : Math.random() < 0.70;
+            
+            let outcome;
+            if (isWin) {
+                outcome = positiveOutcomes[Math.floor(Math.random() * positiveOutcomes.length)];
+            } else {
+                outcome = negativeOutcomes[Math.floor(Math.random() * negativeOutcomes.length)];
+            }
+
+            const spinDurations = [1500, 2000, 2500];
+            const spinCounts = [15, 20, 25];
+
+            reels.forEach((reel, index) => {
+                let stripHTML = '';
+                for (let i = 0; i < spinCounts[index]; i++) {
+                    const sym = allSymbols[Math.floor(Math.random() * allSymbols.length)];
+                    stripHTML += `<div class="reel-symbol">${sym}</div>`;
+                }
+                // Add final symbol that matches the outcome
+                stripHTML += `<div class="reel-symbol">${outcome.symbols[index]}</div>`;
+                
+                reel.innerHTML = stripHTML;
+                reel.style.transition = 'none';
+                reel.style.transform = 'translateY(0)';
+
+                reel.offsetHeight;
+
+                const totalHeight = (spinCounts[index]) * 100;
+                reel.style.transition = `transform ${spinDurations[index]}ms cubic-bezier(0.15, 0.85, 0.4, 1)`;
+                reel.style.transform = `translateY(-${totalHeight}px)`;
+            });
+
+            setTimeout(() => {
+                // Update lights
+                for (let i = 1; i <= 3; i++) {
+                    const light = document.getElementById(`light${machine}${i}`);
+                    light.classList.add(isWin ? 'win' : 'lose');
+                }
+
+                // Show outcome
+                const outcomeDisplay = document.getElementById(`outcome${machine}`);
+                const outcomeBox = document.getElementById(`outcomeBox${machine}`);
+                const outcomeTitle = document.getElementById(`outcomeTitle${machine}`);
+                const outcomeDesc = document.getElementById(`outcomeDesc${machine}`);
+                
+                outcomeBox.className = 'outcome-box ' + (isWin ? 'positive' : 'negative');
+                outcomeTitle.textContent = outcome.title;
+                outcomeDesc.textContent = outcome.description;
+                outcomeDisplay.classList.add('show');
+
+                // Update pull count
+                totalPulls++;
+                document.getElementById('pullCount').textContent = totalPulls;
+
+                // Reveal truth after threshold
+                if (totalPulls >= revealThreshold) {
+                    document.getElementById('revealContainer').classList.add('show');
+                }
+                
+                machineState[machine].spinning = false;
+            }, 2700);
+        }
+    </script>
+</body>
+</html>
